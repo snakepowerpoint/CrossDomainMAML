@@ -41,10 +41,10 @@ class RelationNet(MetaTemplate):
     relations = self.relation_module(relation_pairs).view(-1, self.n_way)
     return relations
 
-  def set_forward_loss(self, x):
+  def set_forward_loss(self, x, is_feature=False):
     y = torch.from_numpy(np.repeat(range( self.n_way ), self.n_query ))
 
-    scores = self.set_forward(x)
+    scores = self.set_forward(x, is_feature)
     if self.loss_type == 'mse':
       y_oh = utils.one_hot(y, self.n_way)
       y_oh = y_oh.cuda()
