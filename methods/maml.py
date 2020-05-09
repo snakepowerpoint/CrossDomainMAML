@@ -19,6 +19,7 @@ class MAML(nn.Module):
     
     # enable our maml
     self.maml = True
+    self.beta = params.beta
 
     # get metric-based model and enable L2L(maml) training
     train_few_shot_params    = dict(n_way=params.train_n_way, n_support=params.n_shot)
@@ -102,9 +103,9 @@ class MAML(nn.Module):
       _, ft_loss = self.model.set_forward_loss(x_new)
 
       if self.maml:
-        total_loss = model_loss_nd + ft_loss
+        total_loss = model_loss_nd + self.beta * ft_loss
       else:
-        total_loss = model_loss + 3 * ft_loss
+        total_loss = model_loss + self.beta * ft_loss
 
       # optimize model
       self.model_optim.zero_grad()
