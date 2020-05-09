@@ -29,6 +29,10 @@ def parse_args(script):
   elif script == 'test':
     parser.add_argument('--split'       , default='novel', help='base/val/novel')
     parser.add_argument('--save_epoch', default=399, type=int,help ='save feature from the model trained in x epoch, use the best model if x is -1')
+    parser.add_argument('--start_epoch' , default=0, type=int,help ='Starting epoch')
+    parser.add_argument('--stop_epoch'  , default=400, type=int, help ='Stopping epoch')
+    parser.add_argument('--n_iter'  , default=5, type=int, help ='number of iterations during testing time')
+    parser.add_argument('--n_task'  , default=1000, type=int, help ='number of tasks for testing')
   else:
     raise ValueError('Unknown script')
 
