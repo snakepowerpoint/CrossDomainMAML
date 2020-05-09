@@ -109,14 +109,7 @@ class MAML(nn.Module):
       # optimize model
       self.model_optim.zero_grad()
       total_loss.backward()
-      # for k, weight in enumerate(self.split_model_parameters()[0]):
-      #   weight.grad = meta_grad[k] if weight.grad is None else weight.grad + meta_grad[k]
       self.model_optim.step()
-
-      # # optimize ft
-      # self.ft_optim.zero_grad()
-      # ft_loss.backward()
-      # self.ft_optim.step()
 
       # loss
       if self.maml:

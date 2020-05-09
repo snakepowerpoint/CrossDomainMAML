@@ -16,9 +16,7 @@ from methods import gnn
 
 
 def test(task, model, n_iter, n_sub_query, params):
-  # weight
-  # model_params, _ = split_model_parameters(model)
-
+  
   # train loop: update model using support set
   n_support = params.n_shot
   support = task[:, :n_support, :, :, :]
@@ -31,15 +29,6 @@ def test(task, model, n_iter, n_sub_query, params):
     model.model.n_query = n_sub_query
     model.model.n_support = n_support - n_sub_query
     _, model_loss = model.model.set_forward_loss(support)
-
-    # # update model parameters according to model_loss
-    # meta_grad = torch.autograd.grad(model_loss, model_params, create_graph=True)
-    # for k, weight in enumerate(model_params):
-    #   if weight.fast is None:
-    #     weight.fast = weight - model.model_optim.param_groups[0]['lr']*meta_grad[k]
-    #   else:
-    #     weight.fast = weight.fast - model.model_optim.param_groups[0]['lr']*meta_grad[k]
-    # meta_grad = [g.detach() for g in meta_grad]
     
     # optimize model
     model.model_optim.zero_grad()
@@ -114,23 +103,7 @@ if __name__=='__main__':
     modelfile   = get_assigned_file(params.checkpoint_dir, params.save_epoch)
   else:
     modelfile   = get_best_file(params.checkpoint_dir)
-  # _ = model.resume(modelfile)
-
-  # start_epoch = params.start_epoch
-  # stop_epoch = params.stop_epoch
-  # if params.resume != '':
-  #   resume_file = get_resume_file('%s/checkpoints/%s'%(params.save_dir, params.resume), params.resume_epoch)
-  #   if resume_file is not None:
-  #     start_epoch = model.resume(resume_file)
-  #     print('  resume the training with at {} epoch (model file {})'.format(start_epoch, params.resume))
-  #   else:
-  #     raise ValueError('No resume file')
-  # # load pre-trained feature encoder
-  # else:
-  #   if params.warmup == 'gg3b0':
-  #     raise Exception('Must provide pre-trained feature-encoder file using --warmup option!')
-  #   model.model.feature.load_state_dict(load_warmup_state('%s/checkpoints/%s'%(params.save_dir, params.warmup), params.method), strict=False)
-
+  
   # start evaluate
   print('\n--- start the testing ---')
   acc_all = []
