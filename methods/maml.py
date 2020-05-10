@@ -125,7 +125,8 @@ class MAML(nn.Module):
             epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1)))
       if (total_it + 1) % 10 == 0 and self.tf_writer is not None:
         if self.maml:
-          self.tf_writer.add_scalar('MAML/model_loss', model_loss_nd.item(), total_it + 1)
+          self.tf_writer.add_scalar('MAML/model_loss', model_loss.item(), total_it + 1)
+          self.tf_writer.add_scalar('MAML/model_loss_nd', model_loss_nd.item(), total_it + 1)
         else:
           self.tf_writer.add_scalar('MAML/model_loss', model_loss.item(), total_it + 1)
         self.tf_writer.add_scalar('MAML/ft_loss', ft_loss.item(), total_it + 1)
