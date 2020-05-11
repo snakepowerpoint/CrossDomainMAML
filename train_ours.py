@@ -8,7 +8,7 @@ from methods.maml import MAML
 
 
 # training iterations
-def train(base_datamgr, base_set, val_loader, model, start_epoch, stop_epoch, params):
+def train(base_datamgr, base_set, val_loader, val_loader_nd, model, start_epoch, stop_epoch, params):
   
   # use miniImagenet as base (seen) domain and other dataset as meta (unseen) domain
   ps_set = 'miniImagenet'
@@ -21,21 +21,22 @@ def train(base_datamgr, base_set, val_loader, model, start_epoch, stop_epoch, pa
   # training
   for epoch in range(start_epoch,stop_epoch):
 
-    # TODO (done)
-    # randomly split seen domains to pseudo-seen and pseudo-unseen domains
-    pu_set = random.sample(base_set, k=1)
+    # TODO (done): randomly split seen domains to pseudo-seen and pseudo-unseen domains
+    if params.mix:
+      pu_set = base_set
+    else:
+      pu_set = random.sample(base_set, k=1)
     ps_loader = base_datamgr.get_data_loader(os.path.join(params.data_dir, ps_set, 'base.json'), aug=params.train_aug)
     ps_loader_second = base_datamgr.get_data_loader(os.path.join(params.data_dir, ps_set, 'base.json'), aug=params.train_aug)
     pu_loader = base_datamgr.get_data_loader([os.path.join(params.data_dir, dataset, 'base.json') for dataset in pu_set], aug=params.train_aug)
-
+    
     # train loop
     model.train()
     total_it = model.trainall_loop(epoch, ps_loader, ps_loader_second, pu_loader, total_it)
 
+    # TODO (done): monitor second miniImagenet loss
     # validate
-    model.eval()
-    with torch.no_grad():
-      acc = model.test_loop(val_loader)
+    acc = model.test_loop(val_loader, val_loader_nd)
 
     # save
     if acc > max_acc:
@@ -89,6 +90,7 @@ if __name__=='__main__':
   test_few_shot_params    = dict(n_way = params.test_n_way, n_support = params.n_shot)
   val_datamgr             = SetDataManager(image_size, n_query = n_query, **test_few_shot_params)
   val_loader              = val_datamgr.get_data_loader( val_file, aug = False)
+  val_loader_nd           = val_datamgr.get_data_loader( val_file, aug = False)
 
   model = MAML(params, tf_path=params.tf_dir)
   model.cuda()
@@ -111,4 +113,4 @@ if __name__=='__main__':
 
   # training
   print('\n--- start the training ---')
-  train(base_datamgr, datasets, val_loader, model, start_epoch, stop_epoch, params)
+  train(base_datamgr, datasets, val_loader, val_loader_nd, model, start_epoch, stop_epoch, params)

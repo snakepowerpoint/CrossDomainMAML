@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 from methods import protonet
 from methods import matchingnet
 from methods import relationnet
@@ -55,7 +56,7 @@ class MAML(nn.Module):
 
     # optimizer
     model_params, ft_params = self.split_model_parameters()
-    self.model_optim = torch.optim.Adam(model_params)
+    self.model_optim = torch.optim.Adam(model_params, lr=5e-4)
     
     # total epochs
     self.total_epoch = params.stop_epoch
@@ -79,7 +80,7 @@ class MAML(nn.Module):
     avg_ft_loss = 0.
 
     for i, ((x, _), (x_nd, _), (x_new, _)) in enumerate(zip(ps_loader, ps_loader_second, pu_loader)):
-
+      
       # clear fast weight
       for weight in self.split_model_parameters()[0]:
         weight.fast = None
@@ -167,12 +168,48 @@ class MAML(nn.Module):
       total_it += 1
     return total_it
 
-  def test_loop(self, test_loader, record=None):
-    self.model.eval()
-    for weight in self.model.parameters():
-      weight.fast = None
-    return self.model.test_loop(test_loader, record)
+  def test_loop(self, test_loader, test_loader_nd, record=None):
+    loss = 0.
+    acc_all = []
 
+    iter_num = len(test_loader)
+    for i, ((x, _), (x_nd, _)) in enumerate(zip(test_loader, test_loader_nd)):
+
+      # clear fast weight
+      for weight in self.split_model_parameters()[0]:
+        weight.fast = None
+
+      # classifcation loss  ### with ft layers (optimize model)
+      self.model.train()
+      self.model.n_query = x.size(1) - self.model.n_support
+      if self.model.change_way:
+        self.model.n_way = x.size(0)
+      _, model_loss = self.model.set_forward_loss(x)
+
+      # update model parameters according to model_loss
+      meta_grad = torch.autograd.grad(model_loss, self.split_model_parameters()[0], create_graph=True)
+      for k, weight in enumerate(self.split_model_parameters()[0]):
+        weight.fast = weight - self.model_optim.param_groups[0]['lr']*meta_grad[k]
+      meta_grad = [g.detach() for g in meta_grad]
+
+      # classification loss with updated model  ### and without ft layers (optimize ft layers)
+      self.model.eval()
+      self.model.n_query = x_nd.size(1) - self.model.n_support
+      scores, model_loss_nd = self.model.set_forward_loss(x_nd)
+      pred = scores.data.cpu().numpy().argmax(axis = 1)
+      y = np.repeat(range( self.model.n_way ), self.model.n_query )
+
+      acc_all.append(np.mean(pred == y)*100)
+      loss += model_loss_nd.item()
+      
+    acc_all  = np.asarray(acc_all)
+    acc_mean = np.mean(acc_all)
+    acc_std  = np.std(acc_all)
+    print('--- %d Loss = %.6f ---' %(iter_num,  loss/iter_num))
+    print('--- %d Test Acc = %4.2f%% +- %4.2f%% ---' %(iter_num,  acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
+    
+    return acc_mean
+     
   def cuda(self):
     self.model.cuda()
 

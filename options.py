@@ -27,6 +27,7 @@ def parse_args(script):
     parser.add_argument('--resume'      , default='', type=str, help='continue from previous trained model with largest epoch')
     parser.add_argument('--resume_epoch', default=-1, type=int, help='')
     parser.add_argument('--warmup'      , default='gg3b0', type=str, help='continue from baseline, neglected if resume is true')
+    parser.add_argument('--mix'         , action='store_true', help='mix multiple domains or not during train')
   elif script == 'test':
     parser.add_argument('--split'       , default='novel', help='base/val/novel')
     parser.add_argument('--save_epoch', default=399, type=int,help ='save feature from the model trained in x epoch, use the best model if x is -1')
@@ -34,6 +35,7 @@ def parse_args(script):
     parser.add_argument('--stop_epoch'  , default=400, type=int, help ='Stopping epoch')
     parser.add_argument('--n_iter'  , default=5, type=int, help ='number of iterations during testing time')
     parser.add_argument('--n_task'  , default=1000, type=int, help ='number of tasks for testing')
+    parser.add_argument('--n_exp'  , default=1, type=int, help ='number of experiment for testing')
   else:
     raise ValueError('Unknown script')
 

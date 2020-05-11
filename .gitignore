@@ -62,5 +62,6 @@ configs.py
 *.pth
 output/checkpoints/**/*.tar
 output/log
+output/log_test
 output/features
 output/results
