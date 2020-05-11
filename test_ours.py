@@ -13,6 +13,7 @@ from methods import gnnnet
 from methods.backbone import model_dict
 from methods import backbone
 from methods import gnn
+from tensorboardX import SummaryWriter
 
 
 def test(task, model, n_iter, n_sub_query, params):
@@ -106,20 +107,29 @@ if __name__=='__main__':
   
   # start evaluate
   print('\n--- start the testing ---')
-  acc_all = []
+  n_exp = params.n_exp
   n_iter = params.n_iter
-  data_generator = iter(data_loader)
-
-  for i in range(n_task):
-    task = next(data_generator)[0]
-    n_sub_query = 1
-    _ = model.resume(modelfile)
-    acc = test(task, model, n_iter, n_sub_query, params)
-    acc_all.append(acc)
-
+  tf_path = '%s/log_test/%s_iter_%s'%(params.save_dir, params.name, params.n_iter)
+  tf_writer = SummaryWriter(log_dir=tf_path) 
+    
   # statics
-  print('\n--- get statics ---')
-  acc_all = np.asarray(acc_all)
-  acc_mean = np.mean(acc_all)
-  acc_std = np.std(acc_all)
-  print('  %d test task, %d iteration: Acc = %4.2f%% +- %4.2f%%' % (n_task, n_iter, acc_mean, 1.96* acc_std/np.sqrt(n_task)))
+  print('\n--- get statics ---')  
+  for i in range(n_exp):
+    acc_all = []
+    data_loader = datamgr.get_data_loader(loadfile, aug = False)  
+    data_generator = iter(data_loader)
+  
+    for _ in range(n_task):
+      task = next(data_generator)[0]
+      n_sub_query = 1
+      _ = model.resume(modelfile)
+      acc = test(task, model, n_iter, n_sub_query, params)
+      acc_all.append(acc)
+
+    acc_all = np.asarray(acc_all)
+    acc_mean = np.mean(acc_all)
+    acc_std = np.std(acc_all)
+    print('  %d Experiment: %d test task, %d iteration: Acc = %4.2f%% +- %4.2f%%' % (i+1, n_task, n_iter, acc_mean, 1.96* acc_std/np.sqrt(n_task)))
+    
+    tf_writer.add_scalar('acc', acc_mean, i + 1)
+    tf_writer.add_scalar('confidence interval', 1.96* acc_std/np.sqrt(n_task), i + 1)
