@@ -36,6 +36,7 @@ def train(base_datamgr, base_set, val_loader, val_loader_nd, model, start_epoch,
 
     # TODO (done): monitor second miniImagenet loss
     # validate
+    # del ps_loader, ps_loader_second
     acc = model.test_loop(val_loader, val_loader_nd)
 
     # save
@@ -86,9 +87,9 @@ if __name__=='__main__':
 
   n_query = max(1, int(16* params.test_n_way/params.train_n_way))
   train_few_shot_params   = dict(n_way = params.train_n_way, n_support = params.n_shot)
-  base_datamgr            = SetDataManager(image_size, n_query = n_query,  **train_few_shot_params)
+  base_datamgr            = SetDataManager(image_size, n_query = n_query, n_eposide = 100,  **train_few_shot_params)
   test_few_shot_params    = dict(n_way = params.test_n_way, n_support = params.n_shot)
-  val_datamgr             = SetDataManager(image_size, n_query = n_query, **test_few_shot_params)
+  val_datamgr             = SetDataManager(image_size, n_query = n_query, n_eposide = 100, **test_few_shot_params)
   val_loader              = val_datamgr.get_data_loader( val_file, aug = False)
   val_loader_nd           = val_datamgr.get_data_loader( val_file, aug = False)
 

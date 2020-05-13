@@ -56,7 +56,7 @@ class MAML(nn.Module):
 
     # optimizer
     model_params, ft_params = self.split_model_parameters()
-    self.model_optim = torch.optim.Adam(model_params, lr=5e-4)
+    self.model_optim = torch.optim.Adam(model_params, lr=params.lr)
     
     # total epochs
     self.total_epoch = params.stop_epoch
@@ -193,9 +193,12 @@ class MAML(nn.Module):
       meta_grad = [g.detach() for g in meta_grad]
 
       # classification loss with updated model  ### and without ft layers (optimize ft layers)
-      self.model.eval()
-      self.model.n_query = x_nd.size(1) - self.model.n_support
-      scores, model_loss_nd = self.model.set_forward_loss(x_nd)
+      # del x, model_loss
+      with torch.no_grad():
+        self.model.eval()
+        self.model.n_query = x_nd.size(1) - self.model.n_support
+        scores, model_loss_nd = self.model.set_forward_loss(x_nd)
+      
       pred = scores.data.cpu().numpy().argmax(axis = 1)
       y = np.repeat(range( self.model.n_way ), self.model.n_query )
 

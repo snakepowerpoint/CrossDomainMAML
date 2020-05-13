@@ -13,6 +13,7 @@ def parse_args(script):
   parser.add_argument('--train_n_way' , default=5, type=int,  help='class num to classify for training')
   parser.add_argument('--test_n_way'  , default=5, type=int,  help='class num to classify for testing (validation) ')
   parser.add_argument('--n_shot'      , default=5, type=int,  help='number of labeled data in each class, same as n_support')
+  parser.add_argument('--lr'          , default=5e-4, type=float,  help='first learning rate')
   parser.add_argument('--beta'        , default=3, type=int,  help='weighting for cross-domain loss')
   parser.add_argument('--train_aug'   , action='store_true',  help='perform data augmentation or not during training ')
   parser.add_argument('--name'        , default='tmp', type=str, help='')
@@ -30,12 +31,13 @@ def parse_args(script):
     parser.add_argument('--mix'         , action='store_true', help='mix multiple domains or not during train')
   elif script == 'test':
     parser.add_argument('--split'       , default='novel', help='base/val/novel')
-    parser.add_argument('--save_epoch', default=399, type=int,help ='save feature from the model trained in x epoch, use the best model if x is -1')
+    parser.add_argument('--save_epoch'  , default=399, type=int,help ='save feature from the model trained in x epoch, use the best model if x is -1')
     parser.add_argument('--start_epoch' , default=0, type=int,help ='Starting epoch')
     parser.add_argument('--stop_epoch'  , default=400, type=int, help ='Stopping epoch')
-    parser.add_argument('--n_iter'  , default=5, type=int, help ='number of iterations during testing time')
-    parser.add_argument('--n_task'  , default=1000, type=int, help ='number of tasks for testing')
-    parser.add_argument('--n_exp'  , default=1, type=int, help ='number of experiment for testing')
+    parser.add_argument('--n_iter'      , default=5, type=int, help ='number of iterations during testing time')
+    parser.add_argument('--n_task'      , default=1000, type=int, help ='number of tasks for testing')
+    parser.add_argument('--n_exp'       , default=1, type=int, help ='number of experiment for testing')
+    parser.add_argument('--opt'         , default='', type=str, help ='sgd/adam, specify optimizer for testing')
   else:
     raise ValueError('Unknown script')
 

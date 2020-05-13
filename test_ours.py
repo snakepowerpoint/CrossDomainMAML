@@ -17,7 +17,16 @@ from tensorboardX import SummaryWriter
 
 
 def test(task, model, n_iter, n_sub_query, params):
-  
+  # model optimizer
+  if params.opt == 'sgd':
+    model_params, _ = model.split_model_parameters()
+    model.model_optim = torch.optim.SGD(model_params, lr=params.lr)
+  elif params.opt == 'adam':
+    model_params, _ = model.split_model_parameters()
+    model.model_optim = torch.optim.Adam(model_params, lr=params.lr)
+  else:
+    pass  
+
   # train loop: update model using support set
   n_support = params.n_shot
   support = task[:, :n_support, :, :, :]
@@ -109,7 +118,7 @@ if __name__=='__main__':
   print('\n--- start the testing ---')
   n_exp = params.n_exp
   n_iter = params.n_iter
-  tf_path = '%s/log_test/%s_iter_%s'%(params.save_dir, params.name, params.n_iter)
+  tf_path = '%s/log_test/%s_iter_%s_%s'%(params.save_dir, params.name, params.n_iter, params.opt)
   tf_writer = SummaryWriter(log_dir=tf_path) 
     
   # statics
