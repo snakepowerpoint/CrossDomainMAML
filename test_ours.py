@@ -14,7 +14,7 @@ from methods.backbone import model_dict
 from methods import backbone
 from methods import gnn
 from tensorboardX import SummaryWriter
-
+from tqdm import tqdm
 
 def test(base_task, test_task, model, n_iter, n_sub_query, params):
   # model optimizer
@@ -138,8 +138,9 @@ if __name__=='__main__':
 
     base_data_generator = iter(base_data_loader)
     test_data_generator = iter(test_data_loader)
-  
-    for j in range(n_task):
+    
+    task_pbar = tqdm(range(n_task))
+    for j in task_pbar:
       base_task = next(base_data_generator)[0]
       test_task = next(test_data_generator)[0]
       n_sub_query = 1
