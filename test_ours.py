@@ -16,7 +16,7 @@ from methods import gnn
 from tensorboardX import SummaryWriter
 
 
-def test(task, model, n_iter, n_sub_query, params):
+def test(base_task, test_task, model, n_iter, n_sub_query, params):
   # model optimizer
   if params.opt == 'sgd':
     model_params, _ = model.split_model_parameters()
@@ -29,34 +29,42 @@ def test(task, model, n_iter, n_sub_query, params):
 
   # train loop: update model using support set
   n_support = params.n_shot
-  support = task[:, :n_support, :, :, :]
+  base_support = base_task[:, :n_support, :, :, :]
+  test_support = test_task[:, :n_support, :, :, :]
   for _ in range(n_iter):
     # shuffle support
-    support = support[:, torch.randperm(support.size(1))]
+    base_support = base_support[:, torch.randperm(base_support.size(1))]
+    test_support = test_support[:, torch.randperm(test_support.size(1))]
 
     # model setting and forward
     model.train()
     model.model.n_query = n_sub_query
     model.model.n_support = n_support - n_sub_query
-    _, model_loss = model.model.set_forward_loss(support)
-    
+    _, base_loss = model.model.set_forward_loss(base_support)
+    _, test_loss = model.model.set_forward_loss(test_support)
+    total_loss = base_loss + params.beta * test_loss
+
     # optimize model
     model.model_optim.zero_grad()
-    model_loss.backward()
+    total_loss.backward()
     model.model_optim.step()
 
   # validate
   model.eval()
   model.model.n_support = n_support
-  n_query = task.size(1) - n_support
+  n_query = base_task.size(1) - n_support
   model.model.n_query = n_query
   
-  scores, _ = model.model.set_forward_loss(task)
-  pred = scores.data.cpu().numpy().argmax(axis = 1)
   y = np.repeat(range( params.test_n_way ), n_query )
-  acc = np.mean(pred == y)*100
+  base_scores, _ = model.model.set_forward_loss(base_task)
+  pred = base_scores.data.cpu().numpy().argmax(axis = 1)
+  base_acc = np.mean(pred == y)*100
+
+  test_scores, _ = model.model.set_forward_loss(test_task)
+  pred = test_scores.data.cpu().numpy().argmax(axis = 1)
+  test_acc = np.mean(pred == y)*100
   
-  return acc
+  return base_acc, test_acc
 
 # split the parameters of feature-wise transforamtion layers and others
 def split_model_parameters(model):
@@ -79,7 +87,7 @@ if __name__=='__main__':
 
   # parse argument
   params = parse_args('test')
-  print('Testing! {} shots on {} dataset with {} epochs of {}({})'.format(params.n_shot, params.dataset, params.save_epoch, params.name, params.method))
+  print('Testing! {} shots on {} and {} with {} epochs of {}({})'.format(params.n_shot, params.dataset, params.testset, params.save_epoch, params.name, params.method))
   print(params)
 
   print('\nStage 1: prepare test dataset and model')
@@ -92,11 +100,11 @@ if __name__=='__main__':
   n_task   = params.n_task  # 1000
   n_query  = 15
   split    = params.split  # novel
-  loadfile = os.path.join(params.data_dir, params.dataset, split + '.json')
+  base_loadfile = os.path.join(params.data_dir, params.dataset, split + '.json')
+  test_loadfile = os.path.join(params.data_dir, params.testset, split + '.json')
   test_few_shot_params = dict(n_way = params.test_n_way, n_support = params.n_shot)
   datamgr              = SetDataManager(image_size, n_query = n_query, n_eposide = n_task, **test_few_shot_params)
-  data_loader          = datamgr.get_data_loader(loadfile, aug = False)  
-
+  
   # model
   print('\n--- build MAML model ---')
   params.tf_dir = '%s/log/%s'%(params.save_dir, params.name)
@@ -124,21 +132,31 @@ if __name__=='__main__':
   # statics
   print('\n--- get statics ---')  
   for i in range(n_exp):
-    acc_all = []
-    data_loader = datamgr.get_data_loader(loadfile, aug = False)  
-    data_generator = iter(data_loader)
+    acc_all = np.empty((n_task, 2))
+    base_data_loader = datamgr.get_data_loader(base_loadfile, aug = False)
+    test_data_loader = datamgr.get_data_loader(test_loadfile, aug = False)
+
+    base_data_generator = iter(base_data_loader)
+    test_data_generator = iter(test_data_loader)
   
-    for _ in range(n_task):
-      task = next(data_generator)[0]
+    for j in range(n_task):
+      base_task = next(base_data_generator)[0]
+      test_task = next(test_data_generator)[0]
       n_sub_query = 1
       _ = model.resume(modelfile)
-      acc = test(task, model, n_iter, n_sub_query, params)
-      acc_all.append(acc)
+      base_acc, test_acc = test(base_task, test_task, model, n_iter, n_sub_query, params)
+      acc_all[j] = [base_acc, test_acc]
 
-    acc_all = np.asarray(acc_all)
-    acc_mean = np.mean(acc_all)
-    acc_std = np.std(acc_all)
-    print('  %d Experiment: %d test task, %d iteration: Acc = %4.2f%% +- %4.2f%%' % (i+1, n_task, n_iter, acc_mean, 1.96* acc_std/np.sqrt(n_task)))
+    acc_mean = np.mean(acc_all, axis=0)
+    acc_std = np.std(acc_all, axis=0)
+
+    base_acc, test_acc = acc_mean
+    base_ci, test_ci = 1.96* acc_std/np.sqrt(n_task)
+
+    print('  %d Exp: %d task, %d iter: Acc base = %4.2f%% +- %4.2f%%, test = %4.2f%% +- %4.2f%%' % (i+1, n_task, n_iter, base_acc, base_ci, test_acc, test_ci))
     
-    tf_writer.add_scalar('acc', acc_mean, i + 1)
-    tf_writer.add_scalar('confidence interval', 1.96* acc_std/np.sqrt(n_task), i + 1)
+    tf_writer.add_scalar('base acc', base_acc, i + 1)
+    tf_writer.add_scalar('base CI', base_ci, i + 1)
+    tf_writer.add_scalar('test acc', test_acc, i + 1)
+    tf_writer.add_scalar('test CI', test_ci, i + 1)
+
