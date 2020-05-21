@@ -28,7 +28,7 @@ def parse_args(script):
   parser.add_argument('--test_n_way'  , default=5, type=int,  help='class num to classify for testing (validation) ')
   parser.add_argument('--n_shot'      , default=5, type=int,  help='number of labeled data in each class, same as n_support')
   parser.add_argument('--lr'          , default=5e-4, type=float,  help='first learning rate')
-  parser.add_argument('--beta'        , default=1, type=int,  help='weighting for cross-domain loss')
+  parser.add_argument('--beta'        , default=1, type=float,  help='weighting for cross-domain loss')
   parser.add_argument('--train_aug'   , action='store_true',  help='perform data augmentation or not during training ')
   parser.add_argument('--name'        , default='tmp', type=str, help='')
   parser.add_argument('--save_dir'    , default=default_path + 'CrossDomainFewShot/output', type=str, help='') # Change to /data/
@@ -66,7 +66,8 @@ def get_resume_file(checkpoint_dir, resume_epoch=-1):
   if len(filelist) == 0:
     return None
 
-  filelist =  [ x  for x in filelist if os.path.basename(x) != 'best_model.tar' ]
+  #filelist =  [ x  for x in filelist if os.path.basename(x) != 'best_model.tar' ]
+  filelist =  [ x  for x in filelist if 'best_model' not in os.path.basename(x)]
   epochs = np.array([int(os.path.splitext(os.path.basename(x))[0]) for x in filelist])
   max_epoch = np.max(epochs)
   epoch = max_epoch if resume_epoch == -1 else resume_epoch

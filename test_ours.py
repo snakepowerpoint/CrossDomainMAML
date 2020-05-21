@@ -42,7 +42,7 @@ def test(base_task, test_task, model, n_iter, n_sub_query, params):
     model.model.n_support = n_support - n_sub_query
     _, base_loss = model.model.set_forward_loss(base_support)
     _, test_loss = model.model.set_forward_loss(test_support)
-    total_loss = base_loss + params.beta * test_loss
+    total_loss = (1-params.beta) * base_loss + params.beta * test_loss
 
     # optimize model
     model.model_optim.zero_grad()

@@ -56,7 +56,7 @@ class MAML(nn.Module):
 
     # optimizer
     model_params, ft_params = self.split_model_parameters()
-    self.model_optim = torch.optim.Adam(model_params, lr=params.lr)
+    self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-6, lr=params.lr)
     
     # total epochs
     self.total_epoch = params.stop_epoch
@@ -104,10 +104,10 @@ class MAML(nn.Module):
       _, ft_loss = self.model.set_forward_loss(x_new)
 
       if self.maml:
-        total_loss = model_loss_nd + self.beta * ft_loss
+        total_loss = (1-self.beta) * model_loss_nd + self.beta * ft_loss # wei
       else:
         total_loss = model_loss + self.beta * ft_loss
-
+        
       # optimize model
       self.model_optim.zero_grad()
       total_loss.backward()
@@ -122,8 +122,9 @@ class MAML(nn.Module):
         avg_ft_loss += ft_loss.item()
 
       if (i + 1) % print_freq == 0:
-        print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}'.format(\
-            epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1)))
+        self.beta = avg_ft_loss / (avg_model_loss + avg_ft_loss) # wei
+        print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}, beta {:f}'.format(\
+            epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1), self.beta/(1-self.beta)))
       if (total_it + 1) % 10 == 0 and self.tf_writer is not None:
         if self.maml:
           self.tf_writer.add_scalar('MAML/model_loss', model_loss.item(), total_it + 1)
@@ -168,7 +169,7 @@ class MAML(nn.Module):
       total_it += 1
     return total_it
 
-  def test_loop(self, test_loader, test_loader_nd, record=None):
+  def test_loop(self, test_loader, test_loader_nd, total_it, record=None):
     loss = 0.
     acc_all = []
 
@@ -208,9 +209,14 @@ class MAML(nn.Module):
     acc_all  = np.asarray(acc_all)
     acc_mean = np.mean(acc_all)
     acc_std  = np.std(acc_all)
-    print('--- %d Loss = %.6f ---' %(iter_num,  loss/iter_num))
+    loss_mean = loss/iter_num
+    print('--- %d Loss = %.6f ---' %(iter_num,  loss_mean))
     print('--- %d Test Acc = %4.2f%% +- %4.2f%% ---' %(iter_num,  acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
     
+    if self.tf_writer is not None:
+      self.tf_writer.add_scalar('MAML/val/loss', loss_mean, total_it)
+      self.tf_writer.add_scalar('MAML/val/acc', acc_mean, total_it)
+
     return acc_mean
      
   def cuda(self):

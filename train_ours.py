@@ -37,13 +37,13 @@ def train(base_datamgr, base_set, val_loader, val_loader_nd, model, start_epoch,
     # TODO (done): monitor second miniImagenet loss
     # validate
     # del ps_loader, ps_loader_second
-    acc = model.test_loop(val_loader, val_loader_nd)
+    acc = model.test_loop(val_loader, val_loader_nd, total_it)
 
     # save
     if acc > max_acc:
       print("best model! save...")
       max_acc = acc
-      outfile = os.path.join(params.checkpoint_dir, 'best_model.tar')
+      outfile = os.path.join(params.checkpoint_dir, 'best_model_{}.tar'.format(max_acc))
       model.save(outfile, epoch)
     else:
       print('GG!! best accuracy {:f}'.format(max_acc))
@@ -76,7 +76,8 @@ if __name__=='__main__':
   print('  train with multiple seen domains (unseen domain: {})'.format(params.testset))
   datasets = ['miniImagenet', 'cars', 'places', 'cub', 'plantae']
   datasets.remove(params.testset)
-  val_file = os.path.join(params.data_dir, 'miniImagenet', 'val.json')
+  #val_file = os.path.join(params.data_dir, 'miniImagenet', 'val.json')
+  val_file = os.path.join(params.data_dir, params.testset, 'val.json')
 
   # model
   print('\n--- build MAML model ---')
