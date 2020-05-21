@@ -22,7 +22,6 @@ class MAML(nn.Module):
     self.maml = True
     self.beta = params.beta
     self.adaptive = params.adaptive
-    self.gamma = params.gamma
 
     # get metric-based model and enable L2L(maml) training
     train_few_shot_params    = dict(n_way=params.train_n_way, n_support=params.n_shot)
@@ -58,7 +57,8 @@ class MAML(nn.Module):
 
     # optimizer
     model_params, ft_params = self.split_model_parameters()
-    self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-6, lr=params.lr)
+    self.model_optim = torch.optim.Adam(model_params, lr=params.lr)
+    #self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-4, lr=params.lr)
     
     # total epochs
     self.total_epoch = params.stop_epoch
