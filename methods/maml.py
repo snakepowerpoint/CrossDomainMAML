@@ -127,9 +127,13 @@ class MAML(nn.Module):
         avg_ft_loss += ft_loss.item()
 
       if (i + 1) % print_freq == 0:
-        self.beta = avg_ft_loss / (avg_model_loss + avg_ft_loss) # wei
-        print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}, beta {:f}'.format(\
-            epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1), self.beta/(1-self.beta)))
+        if self.adaptive:
+          self.beta = avg_ft_loss / (avg_model_loss + avg_ft_loss) # wei
+          print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}, beta {:f}'.format(\
+              epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1), self.beta/(1-self.beta)))
+        else:
+          print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}'.format(\
+              epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1)))
       if (total_it + 1) % 10 == 0 and self.tf_writer is not None:
         if self.maml:
           self.tf_writer.add_scalar('MAML/model_loss', model_loss.item(), total_it + 1)
