@@ -29,6 +29,7 @@ def parse_args(script):
   parser.add_argument('--n_shot'      , default=5, type=int,  help='number of labeled data in each class, same as n_support')
   parser.add_argument('--lr'          , default=5e-4, type=float,  help='first learning rate')
   parser.add_argument('--beta'        , default=1, type=float,  help='weighting for cross-domain loss')
+  parser.add_argument('--adaptive'    , action='store_true',  help='apply adaptive beta or not')
   parser.add_argument('--train_aug'   , action='store_true',  help='perform data augmentation or not during training ')
   parser.add_argument('--name'        , default='tmp', type=str, help='')
   parser.add_argument('--save_dir'    , default=default_path + 'CrossDomainFewShot/output', type=str, help='') # Change to /data/
