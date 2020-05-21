@@ -21,6 +21,8 @@ class MAML(nn.Module):
     # enable our maml
     self.maml = True
     self.beta = params.beta
+    self.adaptive = params.adaptive
+    self.gamma = params.gamma
 
     # get metric-based model and enable L2L(maml) training
     train_few_shot_params    = dict(n_way=params.train_n_way, n_support=params.n_shot)
@@ -102,9 +104,13 @@ class MAML(nn.Module):
       self.model.eval()
       _, model_loss_nd = self.model.set_forward_loss(x_nd)
       _, ft_loss = self.model.set_forward_loss(x_new)
-
+      
       if self.maml:
-        total_loss = model_loss_nd + self.beta * ft_loss
+        if self.adaptive:
+          self.beta = ft_loss.item() / (model_loss_nd.item() + ft_loss.item())
+          total_loss = (1 - self.beta)**self.gamma * model_loss_nd + self.beta**self.gamma * ft_loss
+        else:
+          total_loss = model_loss_nd + self.beta * ft_loss
       else:
         total_loss = model_loss + self.beta * ft_loss
 
@@ -168,7 +174,7 @@ class MAML(nn.Module):
       total_it += 1
     return total_it
 
-  def test_loop(self, test_loader, test_loader_nd, record=None):
+  def test_loop(self, test_loader, test_loader_nd, total_it, record=None):
     loss = 0.
     acc_all = []
 
@@ -210,6 +216,9 @@ class MAML(nn.Module):
     acc_std  = np.std(acc_all)
     print('--- %d Loss = %.6f ---' %(iter_num,  loss/iter_num))
     print('--- %d Test Acc = %4.2f%% +- %4.2f%% ---' %(iter_num,  acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
+
+    self.tf_writer.add_scalar('MAML/val_acc', acc_mean, total_it + 1)
+    self.tf_writer.add_scalar('MAML/val_loss', loss/iter_num, total_it + 1)
     
     return acc_mean
      

@@ -42,7 +42,11 @@ def test(base_task, test_task, model, n_iter, n_sub_query, params):
     model.model.n_support = n_support - n_sub_query
     _, base_loss = model.model.set_forward_loss(base_support)
     _, test_loss = model.model.set_forward_loss(test_support)
-    total_loss = base_loss + params.beta * test_loss
+    if params.adaptive:
+      params.beta = test_loss.item() / (base_loss.item() + test_loss.item())
+      total_loss = (1 - params.beta)**params.gamma * base_loss + params.beta**params.gamma * test_loss
+    else: 
+      total_loss = base_loss + params.beta * test_loss
 
     # optimize model
     model.model_optim.zero_grad()
@@ -155,8 +159,8 @@ if __name__=='__main__':
 
     print('  %d Exp: %d task, %d iter: Acc base = %4.2f%% +- %4.2f%%, test = %4.2f%% +- %4.2f%%' % (i+1, n_task, n_iter, base_acc, base_ci, test_acc, test_ci))
     
-    tf_writer.add_scalar('base acc', base_acc, i + 1)
-    tf_writer.add_scalar('base CI', base_ci, i + 1)
-    tf_writer.add_scalar('test acc', test_acc, i + 1)
-    tf_writer.add_scalar('test CI', test_ci, i + 1)
+    tf_writer.add_scalars('acc', {'base acc': base_acc}, i + 1)
+    tf_writer.add_scalars('CI', {'base_ci': base_ci}, i + 1)
+    tf_writer.add_scalars('acc', {'test_acc': test_acc}, i + 1)
+    tf_writer.add_scalars('CI', {'test_ci': test_ci}, i + 1)
 

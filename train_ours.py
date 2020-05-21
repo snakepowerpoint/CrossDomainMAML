@@ -37,7 +37,7 @@ def train(base_datamgr, base_set, val_loader, val_loader_nd, model, start_epoch,
     # TODO (done): monitor second miniImagenet loss
     # validate
     # del ps_loader, ps_loader_second
-    acc = model.test_loop(val_loader, val_loader_nd)
+    acc = model.test_loop(val_loader, val_loader_nd, total_it)
 
     # save
     if acc > max_acc:
