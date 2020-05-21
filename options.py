@@ -3,8 +3,22 @@ import os
 import glob
 import torch
 import argparse
+import netifaces
+
+def define_dir_by_mac():
+    interfaces = netifaces.interfaces()
+    
+    if 'enp129s0f0' in interfaces:
+        default_path = "/data/common/"
+
+    else:
+        print("Undefined interface: ", interfaces)
+        default_path = "/home/sdc1/dataset/"
+
+    return default_path
 
 def parse_args(script):
+  default_path = define_dir_by_mac()
   parser = argparse.ArgumentParser(description= 'few-shot script %s' %(script))
   parser.add_argument('--dataset', default='multi', help='miniImagenet/cub/cars/places/plantae, specify multi for training with multiple domains')
   parser.add_argument('--testset', default='cub', help='cub/cars/places/plantae, valid only when dataset=multi')
@@ -19,8 +33,8 @@ def parse_args(script):
   parser.add_argument('--adaptive'    , action='store_true',  help='apply adaptive beta or not')
   parser.add_argument('--train_aug'   , action='store_true',  help='perform data augmentation or not during training ')
   parser.add_argument('--name'        , default='tmp', type=str, help='')
-  parser.add_argument('--save_dir'    , default='./output', type=str, help='')
-  parser.add_argument('--data_dir'    , default='./filelists', type=str, help='')
+  parser.add_argument('--save_dir'    , default=default_path + 'CrossDomainFewShot/output', type=str, help='') # Change to /data/
+  parser.add_argument('--data_dir'    , default=default_path + 'CrossDomainFewShot/filelists', type=str, help='') # Change to /data/
 
   if script == 'train':
     parser.add_argument('--num_classes' , default=200, type=int, help='total number of classes in softmax, only used in baseline')

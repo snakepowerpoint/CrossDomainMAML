@@ -61,6 +61,23 @@ class GnnNet(MetaTemplate):
     return scores
 
   def set_forward_loss(self, x):
+    if self.n_support != 5:
+      # rebuild support_label for testing-training
+      #print("--- rebuild ---")
+      support_label = torch.from_numpy(np.repeat(range(self.n_way), self.n_support)).unsqueeze(1)
+      support_label = torch.zeros(self.n_way*self.n_support, self.n_way).scatter(1, support_label, 1).view(self.n_way, self.n_support, self.n_way)
+      support_label = torch.cat([support_label, torch.zeros(self.n_way, 1, self.n_way)], dim=1)
+      self.support_label = support_label.view(1, -1, self.n_way)      
+      self.support_label = self.support_label.cuda()
+    else:
+      # resume support_label for eval
+      #print("--- resume ---")
+      support_label = torch.from_numpy(np.repeat(range(self.n_way), self.n_support)).unsqueeze(1)
+      support_label = torch.zeros(self.n_way*self.n_support, self.n_way).scatter(1, support_label, 1).view(self.n_way, self.n_support, self.n_way)
+      support_label = torch.cat([support_label, torch.zeros(self.n_way, 1, self.n_way)], dim=1)
+      self.support_label = support_label.view(1, -1, self.n_way)      
+      self.support_label = self.support_label.cuda()      
+
     y_query = torch.from_numpy(np.repeat(range( self.n_way ), self.n_query))
     y_query = y_query.cuda()
     scores = self.set_forward(x)
