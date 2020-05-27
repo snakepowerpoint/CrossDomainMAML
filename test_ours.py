@@ -125,6 +125,7 @@ if __name__=='__main__':
     modelfile   = get_assigned_file(params.checkpoint_dir, params.save_epoch)
   else:
     modelfile   = get_best_file(params.checkpoint_dir)
+  print("  load model: %s"%modelfile)
   
   # start evaluate
   print('\n--- start the testing ---')
