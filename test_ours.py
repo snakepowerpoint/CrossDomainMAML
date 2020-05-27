@@ -46,7 +46,7 @@ def test(base_task, test_task, model, n_iter, n_sub_query, params):
       params.beta = test_loss.item() / (base_loss.item() + test_loss.item())
       total_loss = (1 - params.beta) * base_loss + params.beta * test_loss
     else: 
-      total_loss = base_loss + params.beta * test_loss
+      total_loss = (1 - params.beta) * base_loss + params.beta * test_loss
 
     # optimize model
     model.model_optim.zero_grad()
