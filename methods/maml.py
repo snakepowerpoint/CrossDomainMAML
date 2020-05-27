@@ -57,8 +57,8 @@ class MAML(nn.Module):
 
     # optimizer
     model_params, ft_params = self.split_model_parameters()
-    self.model_optim = torch.optim.Adam(model_params, lr=params.lr)
-    #self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-4, lr=params.lr)
+    #self.model_optim = torch.optim.Adam(model_params, lr=params.lr)
+    self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-6, lr=params.lr)
     
     # total epochs
     self.total_epoch = params.stop_epoch
@@ -222,12 +222,9 @@ class MAML(nn.Module):
     print('--- %d Loss = %.6f ---' %(iter_num,  loss_mean))
     print('--- %d Test Acc = %4.2f%% +- %4.2f%% ---' %(iter_num,  acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
 
-    self.tf_writer.add_scalar('MAML/val_acc', acc_mean, total_it + 1)
-    self.tf_writer.add_scalar('MAML/val_loss', loss/iter_num, total_it + 1)
-    
     if self.tf_writer is not None:
-      self.tf_writer.add_scalar('MAML/val/loss', loss_mean, total_it)
-      self.tf_writer.add_scalar('MAML/val/acc', acc_mean, total_it)
+      self.tf_writer.add_scalar('MAML/val_acc', acc_mean, total_it + 1)
+      self.tf_writer.add_scalar('MAML/val_loss', loss/iter_num, total_it + 1)
 
     return acc_mean
      
