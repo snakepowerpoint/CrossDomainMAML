@@ -57,9 +57,11 @@ class MAML(nn.Module):
 
     # optimizer
     model_params, ft_params = self.split_model_parameters()
-    self.model_optim = torch.optim.Adam(model_params, lr=params.lr)
-    #self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-4, lr=params.lr)
-    
+    if params.reg:
+      self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-6, lr=params.lr)
+    else:
+      self.model_optim = torch.optim.Adam(model_params, lr=params.lr)
+  
     # total epochs
     self.total_epoch = params.stop_epoch
 
@@ -128,6 +130,7 @@ class MAML(nn.Module):
 
       if (i + 1) % print_freq == 0:
         if self.adaptive:
+          # self.beta = ft_loss.item() / (model_loss_nd.item() + ft_loss.item()) # rahul
           self.beta = avg_ft_loss / (avg_model_loss + avg_ft_loss) # wei
           print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}, beta {:f}'.format(\
               epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1), self.beta/(1-self.beta)))

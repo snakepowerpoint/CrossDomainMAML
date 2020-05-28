@@ -30,10 +30,13 @@ def parse_args(script):
   parser.add_argument('--lr'          , default=5e-4, type=float,  help='first learning rate')
   parser.add_argument('--beta'        , default=1, type=float,  help='weighting for cross-domain loss')
   parser.add_argument('--adaptive'    , action='store_true',  help='apply adaptive beta or not')
+  parser.add_argument('--reg'         , action='store_true',  help='apply regularization or not')
   parser.add_argument('--train_aug'   , action='store_true',  help='perform data augmentation or not during training ')
   parser.add_argument('--name'        , default='tmp', type=str, help='')
-  parser.add_argument('--save_dir'    , default=default_path + 'CrossDomainFewShot/output', type=str, help='') # Change to /data/
-  parser.add_argument('--data_dir'    , default=default_path + 'CrossDomainFewShot/filelists', type=str, help='') # Change to /data/
+  parser.add_argument('--save_dir'    , default='./output', type=str, help='') 
+  parser.add_argument('--data_dir'    , default='./filelists', type=str, help='') 
+  # parser.add_argument('--save_dir'    , default=default_path + 'CrossDomainFewShot/output', type=str, help='') # Change to /data/
+  # parser.add_argument('--data_dir'    , default=default_path + 'CrossDomainFewShot/filelists', type=str, help='') # Change to /data/
 
   if script == 'train':
     parser.add_argument('--num_classes' , default=200, type=int, help='total number of classes in softmax, only used in baseline')
@@ -97,6 +100,9 @@ def load_warmup_state(filename, method):
         newkey = key.replace("feature.","")
         state[newkey] = state.pop(key)
       elif method == 'matchingnet' and 'feature.' in key and '.7.' not in key:
+        newkey = key.replace("feature.","")
+        state[newkey] = state.pop(key)
+      elif method == 'maml_baseline' and 'feature.' in key:
         newkey = key.replace("feature.","")
         state[newkey] = state.pop(key)
       else:
