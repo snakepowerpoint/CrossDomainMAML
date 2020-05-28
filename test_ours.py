@@ -70,6 +70,48 @@ def test(base_task, test_task, model, n_iter, n_sub_query, params):
   
   return base_acc, test_acc
 
+def test_uni(base_task, test_task, model, n_iter, n_sub_query, params):
+  # model optimizer
+  if params.opt == 'sgd':
+    model_params, _ = model.split_model_parameters()
+    model.model_optim = torch.optim.SGD(model_params, lr=params.lr)
+  elif params.opt == 'adam':
+    model_params, _ = model.split_model_parameters()
+    model.model_optim = torch.optim.Adam(model_params, lr=params.lr)
+  else:
+    pass  
+
+  # train loop: update model using support set
+  n_support = params.n_shot
+  base_support = base_task[:, :n_support, :, :, :]
+  for _ in range(n_iter):
+    # shuffle support
+    base_support = base_support[:, torch.randperm(base_support.size(1))]
+    
+    # model setting and forward
+    model.train()
+    model.model.n_query = n_sub_query
+    model.model.n_support = n_support - n_sub_query
+    _, base_loss = model.model.set_forward_loss(base_support)
+    
+    # optimize model
+    model.model_optim.zero_grad()
+    base_loss.backward()
+    model.model_optim.step()
+
+  # validate
+  model.eval()
+  model.model.n_support = n_support
+  n_query = base_task.size(1) - n_support
+  model.model.n_query = n_query
+  
+  y = np.repeat(range( params.test_n_way ), n_query )
+  base_scores, _ = model.model.set_forward_loss(base_task)
+  pred = base_scores.data.cpu().numpy().argmax(axis = 1)
+  base_acc = np.mean(pred == y)*100
+
+  return base_acc, 0
+
 # split the parameters of feature-wise transforamtion layers and others
 def split_model_parameters(model):
   model_params = []
@@ -149,7 +191,10 @@ if __name__=='__main__':
       test_task = next(test_data_generator)[0]
       n_sub_query = 1
       _ = model.resume(modelfile)
-      base_acc, test_acc = test(base_task, test_task, model, n_iter, n_sub_query, params)
+      if False:
+        base_acc, test_acc = test_uni(base_task, test_task, model, n_iter, n_sub_query, params)
+      else:
+        base_acc, test_acc = test(base_task, test_task, model, n_iter, n_sub_query, params)
       acc_all[j] = [base_acc, test_acc]
 
     acc_mean = np.mean(acc_all, axis=0)
