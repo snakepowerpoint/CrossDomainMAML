@@ -16,7 +16,7 @@ def train(base_datamgr, base_set, val_loader, val_loader_nd, model, start_epoch,
 
   # for validation
   max_acc = 0
-  total_it = 0
+  total_it = start_epoch * 100
 
   # training
   for epoch in range(start_epoch,stop_epoch):
