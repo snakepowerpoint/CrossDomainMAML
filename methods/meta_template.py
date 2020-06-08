@@ -22,6 +22,18 @@ class MetaTemplate(nn.Module):
   def set_forward_loss(self, x):
     pass
 
+  def forward_flat(self, x):
+    x = x.cuda()
+    x = x.contiguous().view( self.n_way * (self.n_support + self.n_query), *x.size()[2:])
+    z_all       = self.feature.forward(x)
+    z_all       = nn.AvgPool2d(7)(z_all)
+    z_all       = z_all.view(z_all.size()[:2])
+
+    z_all       = z_all.view( self.n_way, self.n_support + self.n_query, *z_all.size()[1:])
+    z_support   = z_all[:, :self.n_support]
+    z_query     = z_all[:, self.n_support:]
+    return z_support, z_query
+
   def forward(self,x):
     out  = self.feature.forward(x)
     return out
