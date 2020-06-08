@@ -12,7 +12,7 @@ from tensorboardX import SummaryWriter
 
 
 class MAML(nn.Module):
-  def __init__(self, params, tf_path=None, change_way=True):
+  def __init__(self, params, tf_path=None, change_way=True, flatten=False):
     super(MAML, self).__init__()
 
     # tf writer
@@ -44,7 +44,7 @@ class MAML(nn.Module):
       else:
         feature_model = model_dict[params.model]
       loss_type = 'mse' if params.method == 'relationnet' else 'softmax'
-      model = relationnet.RelationNet( feature_model, loss_type = loss_type, tf_path=params.tf_dir, **train_few_shot_params)
+      model = relationnet.RelationNet( feature_model, loss_type = loss_type, tf_path=params.tf_dir, flatten=flatten, **train_few_shot_params)
     elif params.method == 'gnnnet':
       gnnnet.GnnNet.maml=True
       gnn.Gconv.maml=True
@@ -58,7 +58,7 @@ class MAML(nn.Module):
     # optimizer
     model_params, ft_params = self.split_model_parameters()
     if params.reg:
-      self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-6, lr=params.lr)
+      self.model_optim = torch.optim.Adam(model_params, weight_decay=1e-8, lr=params.lr)
     else:
       self.model_optim = torch.optim.Adam(model_params, lr=params.lr)
   

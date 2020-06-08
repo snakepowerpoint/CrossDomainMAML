@@ -351,7 +351,7 @@ class SimpleBlock(nn.Module):
 
 # --- ConvNet module ---
 class ConvNet(nn.Module):
-  def __init__(self, depth, flatten = True):
+  def __init__(self, depth, flatten = True, leakyrelu=False):
     super(ConvNet,self).__init__()
     self.grads = []
     self.fmaps = []
@@ -374,7 +374,7 @@ class ConvNet(nn.Module):
 
 # --- ConvNetNopool module ---
 class ConvNetNopool(nn.Module): #Relation net use a 4 layer conv with pooling in only first two layers, else no pooling
-  def __init__(self, depth):
+  def __init__(self, depth, flatten=False, leakyrelu=False):
     super(ConvNetNopool,self).__init__()
     self.grads = []
     self.fmaps = []
@@ -384,6 +384,9 @@ class ConvNetNopool(nn.Module): #Relation net use a 4 layer conv with pooling in
       outdim = 64
       B = ConvBlock(indim, outdim, pool = ( i in [0,1] ), padding = 0 if i in[0,1] else 1  ) #only first two layer has pooling and no padding
       trunk.append(B)
+
+    if flatten:
+      trunk.append(Flatten())
 
     self.trunk = nn.Sequential(*trunk)
     self.final_feat_dim = [64,19,19]
@@ -440,14 +443,14 @@ class ResNet(nn.Module):
     return out
 
 # --- Conv networks ---
-def Conv4():
-    return ConvNet(4)
-def Conv6():
-    return ConvNet(6)
-def Conv4NP():
-    return ConvNetNopool(4)
-def Conv6NP():
-    return ConvNetNopool(6)
+def Conv4(flatten=True, leakyrelu=False):
+    return ConvNet(4, flatten, leakyrelu)
+def Conv6(flatten=True, leakyrelu=False):
+    return ConvNet(6, flatten, leakyrelu)
+def Conv4NP(flatten=True, leakyrelu=False):
+    return ConvNetNopool(4, flatten, leakyrelu)
+def Conv6NP(flatten=True, leakyrelu=False):
+    return ConvNetNopool(6, flatten, leakyrelu)
 
 # --- ResNet networks ---
 def ResNet10(flatten=True, leakyrelu=False):
