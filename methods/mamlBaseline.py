@@ -16,9 +16,9 @@ class MAMLBaseline(nn.Module):
 
     self.tf_writer = SummaryWriter(log_dir=tf_path) if tf_path is not None else None
 
-    self.n_task = 4
+    self.n_task = 2
     self.task_update_num = 5
-    self.train_lr = 0.05
+    self.train_lr = 0.01
 
     # get maml model and enable L2L(maml) training
     train_few_shot_params = dict(n_way=params.train_n_way, n_support=params.n_shot)
@@ -91,6 +91,7 @@ class MAMLBaseline(nn.Module):
           else:
             weight.fast = weight.fast - self.train_lr * meta_grad[k]
           fast_parameters.append(weight.fast)      
+        # meta_grad = [g.detach() for g in meta_grad]
 
       # classification loss with updated model
       # self.model.eval()
@@ -164,12 +165,10 @@ class MAMLBaseline(nn.Module):
     print('--- %d Loss = %.6f ---' % (iter_num,  loss_mean))
     print('--- %d Test Acc = %4.2f%% +- %4.2f%% ---' % (iter_num,  acc_mean, 1.96 * acc_std/np.sqrt(iter_num)))
 
-    self.tf_writer.add_scalar('MAML/val_acc', acc_mean, total_it + 1)
-    self.tf_writer.add_scalar('MAML/val_loss', loss/iter_num, total_it + 1)
-
     if self.tf_writer is not None:
-      self.tf_writer.add_scalar('MAML/val/loss', loss_mean, total_it)
-      self.tf_writer.add_scalar('MAML/val/acc', acc_mean, total_it)
+      self.tf_writer.add_scalar('MAML/val_acc', acc_mean, total_it + 1)
+      self.tf_writer.add_scalar('MAML/val_loss', loss_mean, total_it + 1)
+
     return acc_mean
 
   # def test_loop(self, val_loader):
