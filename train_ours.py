@@ -109,9 +109,12 @@ if __name__=='__main__':
       raise ValueError('No resume file')
   # load pre-trained feature encoder
   else:
-    if params.warmup == 'gg3b0':
+    if params.warmup == 'scratch':
+      pass
+    elif params.warmup == 'gg3b0':
       raise Exception('Must provide pre-trained feature-encoder file using --warmup option!')
-    model.model.feature.load_state_dict(load_warmup_state('%s/checkpoints/%s'%(params.save_dir, params.warmup), params.method), strict=False)
+    else:
+      model.model.feature.load_state_dict(load_warmup_state('%s/checkpoints/%s'%(params.save_dir, params.warmup), params.method), strict=False)
 
   # training
   print('\n--- start the training ---')
