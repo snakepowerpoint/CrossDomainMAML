@@ -105,9 +105,7 @@ if __name__=='__main__':
       start_epoch = tmp['epoch']+1
       model.load_state_dict(tmp['state'])
       print('  resume the training with at {} epoch (model file {})'.format(start_epoch, params.resume))
-  elif True:
-    pass
-  elif params.method == 'maml_baseline':
+  elif params.method == 'maml_baseline' and params.warmup == 'baseline':
     if params.warmup == 'gg3b0':
       raise Exception('Must provide the pre-trained feature encoder file using --warmup option!')
     state = load_warmup_state('%s/checkpoints/%s'%(params.save_dir, params.warmup), params.method)
