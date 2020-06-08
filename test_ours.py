@@ -190,7 +190,7 @@ if __name__=='__main__':
     for j in task_pbar:
       base_task = next(base_data_generator)[0]
       test_task = next(test_data_generator)[0]
-      n_sub_query = 1
+      n_sub_query = params.n_sub_query
       _ = model.resume(modelfile)
       if False:
         base_acc, test_acc = test_uni(base_task, test_task, model, n_iter, n_sub_query, params)

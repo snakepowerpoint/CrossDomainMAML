@@ -27,6 +27,7 @@ def parse_args(script):
   parser.add_argument('--train_n_way' , default=5, type=int,  help='class num to classify for training')
   parser.add_argument('--test_n_way'  , default=5, type=int,  help='class num to classify for testing (validation) ')
   parser.add_argument('--n_shot'      , default=5, type=int,  help='number of labeled data in each class, same as n_support')
+  parser.add_argument('--n_query'     , default=15, type=int, help='number of query data in each class') 
   parser.add_argument('--lr'          , default=5e-4, type=float,  help='first learning rate')
   parser.add_argument('--beta'        , default=1, type=float,  help='weighting for cross-domain loss')
   parser.add_argument('--adaptive'    , action='store_true',  help='apply adaptive beta or not')
@@ -54,6 +55,7 @@ def parse_args(script):
     parser.add_argument('--stop_epoch'  , default=400, type=int, help ='Stopping epoch')
     parser.add_argument('--n_iter'      , default=5, type=int, help ='number of iterations during testing time')
     parser.add_argument('--n_task'      , default=1000, type=int, help ='number of tasks for testing')
+    parser.add_argument('--n_sub_query' , default=1, type=int, help ='number of sub-query for gradient descent in testing time')
     parser.add_argument('--n_exp'       , default=1, type=int, help ='number of experiment for testing')
     parser.add_argument('--opt'         , default='', type=str, help ='sgd/adam, specify optimizer for testing')
   else:
