@@ -35,10 +35,8 @@ def parse_args(script):
   parser.add_argument('--train_aug'   , action='store_true',  help='perform data augmentation or not during training')
   parser.add_argument('--approx'      , action='store_true',  help='apply first-order approximation')
   parser.add_argument('--name'        , default='tmp', type=str, help='')
-  parser.add_argument('--save_dir'    , default='./output', type=str, help='') 
-  parser.add_argument('--data_dir'    , default='./filelists', type=str, help='') 
-  # parser.add_argument('--save_dir'    , default=default_path + 'CrossDomainFewShot/output', type=str, help='') # Change to /data/
-  # parser.add_argument('--data_dir'    , default=default_path + 'CrossDomainFewShot/filelists', type=str, help='') # Change to /data/
+  parser.add_argument('--save_dir'    , default=default_path + 'CrossDomainFewShot/output', type=str, help='') # Change to /data/
+  parser.add_argument('--data_dir'    , default=default_path + 'CrossDomainFewShot/filelists', type=str, help='') # Change to /data/
 
   if script == 'train':
     parser.add_argument('--num_classes' , default=200, type=int, help='total number of classes in softmax, only used in baseline')
