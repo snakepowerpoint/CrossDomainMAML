@@ -21,23 +21,24 @@ def train(base_datamgr, base_set, val_loader, val_loader_nd, model, start_epoch,
   # training
   for epoch in range(start_epoch,stop_epoch):
 
-    # TODO (done): randomly split seen domains to pseudo-seen and pseudo-unseen domains
+    # randomly split seen domains to pseudo-seen and pseudo-unseen domains
     if params.mix:
       pu_set = base_set
     else:
       pu_set = random.sample(base_set, k=1)
     ps_loader = base_datamgr.get_data_loader(os.path.join(params.data_dir, ps_set, 'base.json'), aug=params.train_aug)
-    ps_loader_second = base_datamgr.get_data_loader(os.path.join(params.data_dir, ps_set, 'base.json'), aug=params.train_aug)
+    ps_loader_nd = base_datamgr.get_data_loader(os.path.join(params.data_dir, ps_set, 'base.json'), aug=params.train_aug)
     pu_loader = base_datamgr.get_data_loader([os.path.join(params.data_dir, dataset, 'base.json') for dataset in pu_set], aug=params.train_aug)
+    pu_loader_nd = base_datamgr.get_data_loader([os.path.join(params.data_dir, dataset, 'base.json') for dataset in pu_set], aug=params.train_aug)
     
     # train loop
     model.train()
-    total_it = model.trainall_loop(epoch, ps_loader, ps_loader_second, pu_loader, total_it)
+    total_it = model.trainall_loop(epoch, ps_loader, ps_loader_nd, pu_loader, pu_loader_nd, total_it, params.approx)
 
-    # TODO (done): monitor second miniImagenet loss
-    # validate
+    # validation: monitor second miniImagenet loss
     # del ps_loader, ps_loader_second
-    acc = model.test_loop(val_loader, val_loader_nd, total_it)
+    model.eval()
+    acc = model.test_loop(val_loader, val_loader_nd, total_it, params.approx)
 
     # save
     if acc > max_acc:
@@ -88,7 +89,7 @@ if __name__=='__main__':
 
   n_query = max(1, int(16* params.test_n_way/params.train_n_way))
   train_few_shot_params   = dict(n_way = params.train_n_way, n_support = params.n_shot)
-  base_datamgr            = SetDataManager(image_size, n_query = n_query, n_eposide = 100,  **train_few_shot_params)
+  base_datamgr            = SetDataManager(image_size, n_query = n_query, n_eposide = 100, **train_few_shot_params)
   test_few_shot_params    = dict(n_way = params.test_n_way, n_support = params.n_shot)
   val_datamgr             = SetDataManager(image_size, n_query = n_query, n_eposide = 100, **test_few_shot_params)
   val_loader              = val_datamgr.get_data_loader( val_file, aug = False)
