@@ -78,12 +78,12 @@ class MAML(nn.Module):
     return model_params, ft_params
 
   # jotinly train the model and the feature-wise transformation layers
-  def trainall_loop(self, epoch, ps_loader, ps_loader_second, pu_loader, total_it):
+  def trainall_loop(self, epoch, ps_loader, ps_loader_nd, pu_loader, pu_loader_nd, total_it, approx=False):
     print_freq = len(ps_loader) / 10
     avg_model_loss = 0.
     avg_ft_loss = 0.
 
-    for i, ((x, _), (x_nd, _), (x_new, _)) in enumerate(zip(ps_loader, ps_loader_second, pu_loader)):
+    for i, ((x, _), (x_nd, _), (x_new, _), (x_new_nd, _)) in enumerate(zip(ps_loader, ps_loader_nd, pu_loader, pu_loader_nd)):
       
       # clear fast weight
       for weight in self.split_model_parameters()[0]:
@@ -94,18 +94,21 @@ class MAML(nn.Module):
       self.model.n_query = x.size(1) - self.model.n_support
       if self.model.change_way:
         self.model.n_way = x.size(0)
-      _, model_loss = self.model.set_forward_loss(x)
+      _, ps_loss = self.model.set_forward_loss(x)
+      _, pu_loss = self.model.set_forward_loss(x_new)
+      model_loss = ps_loss + pu_loss
 
       # update model parameters according to model_loss
       meta_grad = torch.autograd.grad(model_loss, self.split_model_parameters()[0], create_graph=True)
+      if approx:
+        meta_grad = [g.detach() for g in meta_grad]
       for k, weight in enumerate(self.split_model_parameters()[0]):
-        weight.fast = weight - self.model_optim.param_groups[0]['lr']*meta_grad[k]
-      meta_grad = [g.detach() for g in meta_grad]
-
+        weight.fast = weight - self.model_optim.param_groups[0]['lr'] * meta_grad[k]
+      
       # classification loss with updated model  ### and without ft layers (optimize ft layers)
-      self.model.eval()
+      # self.model.eval()
       _, model_loss_nd = self.model.set_forward_loss(x_nd)
-      _, ft_loss = self.model.set_forward_loss(x_new)
+      _, ft_loss = self.model.set_forward_loss(x_new_nd)
       
       if self.maml:
         if self.adaptive:
@@ -181,7 +184,7 @@ class MAML(nn.Module):
       total_it += 1
     return total_it
 
-  def test_loop(self, test_loader, test_loader_nd, total_it, record=None):
+  def test_loop(self, test_loader, test_loader_nd, total_it, record=None, approx=False):
     loss = 0.
     acc_all = []
 
@@ -193,7 +196,7 @@ class MAML(nn.Module):
         weight.fast = None
 
       # classifcation loss  ### with ft layers (optimize model)
-      self.model.train()
+      # self.model.train()
       self.model.n_query = x.size(1) - self.model.n_support
       if self.model.change_way:
         self.model.n_way = x.size(0)
@@ -201,14 +204,15 @@ class MAML(nn.Module):
 
       # update model parameters according to model_loss
       meta_grad = torch.autograd.grad(model_loss, self.split_model_parameters()[0], create_graph=True)
+      if approx:
+        meta_grad = [g.detach() for g in meta_grad]
       for k, weight in enumerate(self.split_model_parameters()[0]):
-        weight.fast = weight - self.model_optim.param_groups[0]['lr']*meta_grad[k]
-      meta_grad = [g.detach() for g in meta_grad]
+        weight.fast = weight - self.model_optim.param_groups[0]['lr'] * meta_grad[k]
 
       # classification loss with updated model  ### and without ft layers (optimize ft layers)
       # del x, model_loss
       with torch.no_grad():
-        self.model.eval()
+        # self.model.eval()
         self.model.n_query = x_nd.size(1) - self.model.n_support
         scores, model_loss_nd = self.model.set_forward_loss(x_nd)
       
@@ -235,7 +239,6 @@ class MAML(nn.Module):
     self.model.cuda()
 
   def reset(self, warmUpState=None):
-
     # reset feature
     if warmUpState is not None:
       self.model.feature.load_state_dict(warmUpState, strict=False)
