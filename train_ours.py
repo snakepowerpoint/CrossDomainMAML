@@ -26,31 +26,37 @@ def train(base_datamgr, base_set, val_loader, val_loader_nd, model, start_epoch,
       pu_set = base_set
     else:
       pu_set = random.sample(base_set, k=1)
+      pu_set_nd = random.sample(base_set, k=1)
+      
     ps_loader = base_datamgr.get_data_loader(os.path.join(params.data_dir, ps_set, 'base.json'), aug=params.train_aug)
     ps_loader_nd = base_datamgr.get_data_loader(os.path.join(params.data_dir, ps_set, 'base.json'), aug=params.train_aug)
     pu_loader = base_datamgr.get_data_loader([os.path.join(params.data_dir, dataset, 'base.json') for dataset in pu_set], aug=params.train_aug)
-    pu_loader_nd = base_datamgr.get_data_loader([os.path.join(params.data_dir, dataset, 'base.json') for dataset in pu_set], aug=params.train_aug)
+    pu_loader_nd = base_datamgr.get_data_loader([os.path.join(params.data_dir, dataset, 'base.json') for dataset in pu_set_nd], aug=params.train_aug)
     
     # train loop
     model.train()
-    total_it = model.trainall_loop(epoch, ps_loader, ps_loader_nd, pu_loader, pu_loader_nd, total_it, params.approx)
+    total_it = model.trainall_loop(epoch, ps_loader, ps_loader_nd, pu_loader, pu_loader_nd, total_it)
 
-    # validation: monitor second miniImagenet loss
-    # del ps_loader, ps_loader_second
-    model.eval()
-    acc = model.test_loop(val_loader, val_loader_nd, total_it, params.approx)
+    if epoch >= 0:
+      # TODO (done): monitor second miniImagenet loss
+      # validate
+      # del ps_loader, ps_loader_second
+      model.eval()
+      acc = model.test_loop(val_loader, val_loader_nd, total_it)
 
     # save
-    if acc > max_acc:
-      print("best model! save...")
-      max_acc = acc
-      outfile = os.path.join(params.checkpoint_dir, 'best_model_{}.tar'.format(max_acc))
-      model.save(outfile, epoch)
+      if acc > max_acc:
+        print("best model! save...")
+        max_acc = acc
+        outfile = os.path.join(params.checkpoint_dir, 'best_model_{}.tar'.format(max_acc))
+        model.save(outfile, epoch)
+      else:
+        print('GG!! best accuracy {:f}'.format(max_acc))
+      if ((epoch + 1) % params.save_freq==0) or (epoch == stop_epoch - 1):
+        outfile = os.path.join(params.checkpoint_dir, '{:d}.tar'.format(epoch + 1))
+        model.save(outfile, epoch)
     else:
-      print('GG!! best accuracy {:f}'.format(max_acc))
-    if ((epoch + 1) % params.save_freq==0) or (epoch == stop_epoch - 1):
-      outfile = os.path.join(params.checkpoint_dir, '{:d}.tar'.format(epoch + 1))
-      model.save(outfile, epoch)
+      print('--- Epoch {} done.'.format(epoch+1))
 
   return
 
@@ -82,6 +88,7 @@ if __name__=='__main__':
 
   # model
   print('\n--- build MAML model ---')
+  print('  train with model: %s'%params.model)
   if 'Conv' in params.model:
     image_size = 84
   else:

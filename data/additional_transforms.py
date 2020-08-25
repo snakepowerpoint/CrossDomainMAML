@@ -7,6 +7,7 @@
 # This is the implementation from https://github.com/facebookresearch/low-shot-shrink-hallucinate.
 
 import torch
+import random
 from PIL import ImageEnhance
 
 transformtypedict=dict(Brightness=ImageEnhance.Brightness, Contrast=ImageEnhance.Contrast, Sharpness=ImageEnhance.Sharpness, Color=ImageEnhance.Color)
@@ -24,3 +25,14 @@ class ImageJitter(object):
       out = transformer(out).enhance(r).convert('RGB')
 
     return out
+
+class AddGaussianNoise(object):
+  def __init__(self, transformdict):
+    self.std = transformdict['std']
+    self.mean = transformdict['mean']
+        
+  def __call__(self, tensor):
+    return tensor + torch.randn(tensor.size()) * self.std + self.mean
+    
+  def __repr__(self):
+    return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)

@@ -20,8 +20,10 @@ class MAML(nn.Module):
     
     # enable our maml
     self.maml = True
+    self.delta = params.beta
     self.beta = params.beta
     self.adaptive = params.adaptive
+    self.approx = params.approx
 
     # get metric-based model and enable L2L(maml) training
     train_few_shot_params    = dict(n_way=params.train_n_way, n_support=params.n_shot)
@@ -78,8 +80,10 @@ class MAML(nn.Module):
     return model_params, ft_params
 
   # jotinly train the model and the feature-wise transformation layers
-  def trainall_loop(self, epoch, ps_loader, ps_loader_nd, pu_loader, pu_loader_nd, total_it, approx=False):
+  def trainall_loop(self, epoch, ps_loader, ps_loader_nd, pu_loader, pu_loader_nd, total_it):
     print_freq = len(ps_loader) / 10
+    avg_ps_loss = 0.
+    avg_pu_loss = 0.
     avg_model_loss = 0.
     avg_ft_loss = 0.
 
@@ -96,11 +100,13 @@ class MAML(nn.Module):
         self.model.n_way = x.size(0)
       _, ps_loss = self.model.set_forward_loss(x)
       _, pu_loss = self.model.set_forward_loss(x_new)
-      model_loss = ps_loss + pu_loss
+      
+      if self.adaptive:
+        model_loss = (1 - self.delta) * ps_loss + self.delta * pu_loss
 
       # update model parameters according to model_loss
       meta_grad = torch.autograd.grad(model_loss, self.split_model_parameters()[0], create_graph=True)
-      if approx:
+      if self.approx:
         meta_grad = [g.detach() for g in meta_grad]
       for k, weight in enumerate(self.split_model_parameters()[0]):
         weight.fast = weight - self.model_optim.param_groups[0]['lr'] * meta_grad[k]
@@ -125,18 +131,22 @@ class MAML(nn.Module):
 
       # loss
       if self.maml:
+        avg_pu_loss += pu_loss.item()
+        avg_ps_loss += ps_loss.item()
         avg_model_loss += model_loss_nd.item()
         avg_ft_loss += ft_loss.item()
       else:
-        avg_model_loss += model_loss.item()
+        avg_model_loss += model_loss_nd.item()
         avg_ft_loss += ft_loss.item()
 
       if (i + 1) % print_freq == 0:
         if self.adaptive:
-          # self.beta = ft_loss.item() / (model_loss_nd.item() + ft_loss.item()) # rahul
+          self.delta = avg_ps_loss / (avg_pu_loss + avg_ps_loss)
           self.beta = avg_ft_loss / (avg_model_loss + avg_ft_loss) # wei
-          print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}, beta {:f}'.format(\
-              epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1), self.beta/(1-self.beta)))
+          print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}, delta {:f}, beta {:f}'.format(\
+              epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1), self.delta/(1-self.delta), self.beta/(1-self.beta)))
+          #print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}, beta {:f}'.format(\
+          #    epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1), self.beta/(1-self.beta)))          
         else:
           print('Epoch {:d}/{:d} | Batch {:d}/{:d} | model_loss {:f}, ft_loss {:f}'.format(\
               epoch + 1, self.total_epoch, i + 1, len(ps_loader), avg_model_loss/float(i+1), avg_ft_loss/float(i+1)))
@@ -184,7 +194,7 @@ class MAML(nn.Module):
       total_it += 1
     return total_it
 
-  def test_loop(self, test_loader, test_loader_nd, total_it, record=None, approx=False):
+  def test_loop(self, test_loader, test_loader_nd, total_it, record=None):
     loss = 0.
     acc_all = []
 
@@ -204,7 +214,7 @@ class MAML(nn.Module):
 
       # update model parameters according to model_loss
       meta_grad = torch.autograd.grad(model_loss, self.split_model_parameters()[0], create_graph=True)
-      if approx:
+      if self.approx:
         meta_grad = [g.detach() for g in meta_grad]
       for k, weight in enumerate(self.split_model_parameters()[0]):
         weight.fast = weight - self.model_optim.param_groups[0]['lr'] * meta_grad[k]
@@ -239,6 +249,7 @@ class MAML(nn.Module):
     self.model.cuda()
 
   def reset(self, warmUpState=None):
+
     # reset feature
     if warmUpState is not None:
       self.model.feature.load_state_dict(warmUpState, strict=False)

@@ -153,6 +153,7 @@ if __name__=='__main__':
   
   # model
   print('\n--- build MAML model ---')
+  print('  test with model: %s'%params.model)
   params.tf_dir = '%s/log/%s'%(params.save_dir, params.name)
   params.checkpoint_dir = '%s/checkpoints/%s'%(params.save_dir, params.name)
   if not os.path.isdir(params.checkpoint_dir):
