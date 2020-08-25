@@ -107,7 +107,12 @@ class SubDataset:
 
   def __getitem__(self,i):
     image_path = os.path.join( self.sub_meta[i])
-    img = Image.open(image_path).convert('RGB')
+    if 'npy' in image_path:
+      img = np.load(image_path)
+      img = img[i].reshape(28, 28)
+      img = Image.fromarray(img).convert('RGB')
+    else:
+      img = Image.open(image_path).convert('RGB')
     img = self.transform(img)
     target = self.target_transform(self.cl)
     return img, target
