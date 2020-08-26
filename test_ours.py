@@ -90,6 +90,7 @@ def test_uni(base_task, test_task, model, n_iter, n_sub_query, params):
     
     # model setting and forward
     model.train()
+    n_sub_query = random.randint(1,4)
     model.model.n_query = n_sub_query
     model.model.n_support = n_support - n_sub_query
     _, base_loss = model.model.set_forward_loss(base_support)
