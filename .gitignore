@@ -47,6 +47,11 @@ filelists/cub/source*
 filelists/miniImagenet/source*
 filelists/places/source*
 filelists/plantae/source*
+filelists/dtd/source*
+filelists/aircraft/source*
+filelists/mscoco/source*
+filelists/omniglot/source*
+filelists/quickdraw/source*
 filelists/plantae/images*
 filelists/cars/*.json
 filelists/cub/*.json
