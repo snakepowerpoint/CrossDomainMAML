@@ -18,7 +18,7 @@ def define_dir_by_mac():
     return default_path
 
 def parse_args(script):
-  default_path = define_dir_by_mac()
+  default_path = define_dir_by_mac()  # "/data/rahul/workspace/cross-domain-few-shot/"
   parser = argparse.ArgumentParser(description= 'few-shot script %s' %(script))
   parser.add_argument('--dataset', default='multi', help='miniImagenet/cub/cars/places/plantae, specify multi for training with multiple domains')
   parser.add_argument('--testset', default='cub', help='cub/cars/places/plantae, valid only when dataset=multi')

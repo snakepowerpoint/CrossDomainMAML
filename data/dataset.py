@@ -111,6 +111,16 @@ class SubDataset:
       img = np.load(image_path)
       img = img[i].reshape(28, 28)
       img = Image.fromarray(img).convert('RGB')
+    elif '[' in image_path:
+      image_list = eval(image_path)
+      path = image_list[0]
+      bbox = image_list[1]
+      img = Image.open(path).convert('RGB')
+      x1 = bbox[0]
+      y1 = bbox[1]
+      x2 = bbox[0] + bbox[2]
+      y2 = bbox[1] + bbox[3]
+      img = img.crop((x1, y1, x2, y2))
     else:
       img = Image.open(image_path).convert('RGB')
     img = self.transform(img)
